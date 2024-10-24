@@ -1,6 +1,8 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
 import { AxiosError } from 'axios';
 import { NearbyHotelsDto, HotelDto, NearbyHotelsResponseDto } from './dto/nearby-hotels.dto';
@@ -9,6 +11,10 @@ import { AccommodationsDto, AccommodationDto, AccommodationsResponseDto } from '
 import { TravelRecommendationsDto, TravelRecommendationsResponseDto } from './dto/travel-recommendations.dto';
 import OpenAI from 'openai';
 import { ForecastRequestDto, ForecastResponseDto, DailyForecast } from './dto/forecast.dto';
+import { TripPlanDto } from './dto/trip-plan.dto';
+import { TripPlan } from './schemas/trip-plan.schema';
+import { TripImage } from './schemas/trip-image.schema'; // Import the TripImage schema
+import mongoose from "mongoose";
 
 @Injectable()
 export class TransportsService {
@@ -17,7 +23,9 @@ export class TransportsService {
 
     constructor(
         private httpService: HttpService,
-        private configService: ConfigService
+        private configService: ConfigService,
+        @InjectModel('TripPlan') private tripPlanModel: Model<TripPlan>,
+        @InjectModel('TripImage') private tripImageModel: Model<TripImage> // Inject the TripImage model
     ) {
         this.mapApiKey = this.configService.get<string>('MAP_API_KEY');
         this.openai = new OpenAI({
@@ -97,7 +105,6 @@ export class TransportsService {
 
     async getPopularFoodsRestaurants(params: PopularFoodsRestaurantsDto): Promise<PopularFoodsRestaurantsResponseDto> {
         try {
-            
             const geocodeResponse = await firstValueFrom(this.httpService.get('https://maps.googleapis.com/maps/api/geocode/json', {
                 params: {
                     address: params.location,
@@ -107,7 +114,6 @@ export class TransportsService {
 
             const location = geocodeResponse.data.results[0].geometry.location;
 
-            
             const placesResponse = await firstValueFrom(this.httpService.get('https://maps.googleapis.com/maps/api/place/nearbysearch/json', {
                 params: {
                     location: `${location.lat},${location.lng}`,
@@ -123,6 +129,13 @@ export class TransportsService {
                     .slice(0, params.limit)
                     .map(async place => {
                         const details = await this.getPlaceDetails(place.place_id);
+
+                        const photoUrls = details.photos
+                            ? details.photos.slice(0, 5).map(photo => 
+                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
+                            )
+                            : [];
+
                         return {
                             name: place.name,
                             address: place.vicinity,
@@ -134,6 +147,7 @@ export class TransportsService {
                             types: place.types,
                             priceLevel: place.price_level,
                             openingHours: details.opening_hours?.weekday_text || [],
+                            photos: photoUrls
                         };
                     })
             );
@@ -249,6 +263,7 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             radius: 5000,
             limit: 3
         };
+        
         const restaurantsResponse = await this.getPopularFoodsRestaurants(restaurantsParams);
         
         
@@ -278,12 +293,12 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
         const accommodationsWithLocation = recommendations.accommodations.map((a: any) => {
             const match = accommodationsResponse.accommodations.find(acc => acc.placeId === a.placeId);
             return {
-                name: a.name,
-                price: a.price,
-                placeId: a.placeId,
-                latitude: match ? match.latitude : null,
-                longitude: match ? match.longitude : null,
-                photos: match ? match.photos : null,
+                name: a?.name,
+                price: a?.price,
+                placeId: a?.placeId,
+                latitude: match ? match?.latitude : null,
+                longitude: match ? match?.longitude : null,
+                photos: match ? match?.photos : null,
                 ...match
             };
         });
@@ -291,20 +306,20 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
         const mealPlansWithLocation = recommendations.mealPlans.map((m: any) => {
             const match = restaurantsResponse.restaurants.find(rest => rest.placeId === m.placeId);
             return {
-                name: m.name,
-                price: m.price,
-                placeId: m.placeId,
-                latitude: match ? match.latitude : null,
-                longitude: match ? match.longitude : null
+                name: m?.name,
+                price: m?.price,
+                placeId: m?.placeId,
+                latitude: match ? match?.latitude : null,
+                longitude: match ? match?.longitude : null,
+                ...match
             };
         });
 
         const transportationWithLocation = recommendations.transportation.map((t: any) => {
-            
             return {
-                type: t.type,
-                price: t.price,
-                placeId: t.placeId, 
+                type: t?.type,
+                price: t?.price,
+                placeId: t?.placeId, 
                 latitude: null,
                 longitude: null
             };
@@ -312,8 +327,8 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
 
        
         return {
-            destination: params.destination,
-            duration: params.duration,
+            destination: params?.destination,
+            duration: params?.duration,
             accommodations: accommodationsWithLocation,
             mealPlans: mealPlansWithLocation,
             transportation: transportationWithLocation
@@ -379,4 +394,74 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             throw error;
         }
     }
+
+    async storeTripPlan(tripPlanDto: TripPlanDto): Promise<TripPlan> {
+        const createdTripPlan = await this.tripPlanModel.create(tripPlanDto);
+        return createdTripPlan
+    }
+
+    async getTripDetails(username: string): Promise<any> {
+        const tripPlans = await this.tripPlanModel.find({ username }).exec();
+        if (!tripPlans || tripPlans.length === 0) {
+            throw new BadRequestException('Trip plan not found');
+        }
+
+        const tripDetails = await Promise.all(tripPlans.map(async (plan) => {
+            const accommodationDetails = await this.getPlaceDetails(plan.accommodation);
+            const mealPlanDetails = await this.getPlaceDetails(plan.mealPlan);
+            return {
+                username: plan.username,
+                destination: plan.destination,
+                accommodation: accommodationDetails,
+                mealPlan: mealPlanDetails,
+                _id: plan._id
+            };
+        }));
+
+        return tripDetails;
+    }
+
+    async storeTripImages(tripId: string, files: Array<any>): Promise<TripImage[]> {
+        const tripImages = files.map(file => ({
+            tripId: new Types.ObjectId(tripId),
+            filename: file.filename,
+            path: file.path,
+            originalName: file.originalname,
+        }));
+
+        return this.tripImageModel.insertMany(tripImages);
+    }
+
+    async getTripById(id: string): Promise<any> {
+        try {
+            const tripPlan = await this.tripPlanModel.findById(id).exec();
+            if (!tripPlan) {
+                throw new BadRequestException('Trip plan not found');
+            }
+
+            const accommodationDetails = await this.getPlaceDetails(tripPlan.accommodation);
+            const mealPlanDetails = await this.getPlaceDetails(tripPlan.mealPlan);
+
+            const tripImages = await this.tripImageModel.find({ tripId: new mongoose.Types.ObjectId(id) }).exec();
+
+            return {
+                username: tripPlan.username,
+                destination: tripPlan.destination,
+                accommodation: accommodationDetails,
+                mealPlan: mealPlanDetails,
+                images: tripImages.map(image => ({
+                    filename: image.filename,
+                    path: image.path,
+                    originalName: image.originalName,
+                })),
+            };
+        } catch (error) {
+            console.error('Error fetching trip by ID:', error);
+            throw error;
+        }
+    }
+
+    
+
+    
 }
