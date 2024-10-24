@@ -410,12 +410,26 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
 
         const tripDetails = await Promise.all(tripPlans.map(async (plan) => {
             const accommodationDetails = await this.getPlaceDetails(plan.accommodation);
+
+            const photoUrls = accommodationDetails.photos
+                            ? accommodationDetails.photos.slice(0, 5).map(photo => 
+                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
+                            )
+                            : [];
+
+
+
             const mealPlanDetails = await this.getPlaceDetails(plan.mealPlan);
+            const photoUrlsMeal = mealPlanDetails.photos
+                            ? mealPlanDetails.photos.slice(0, 5).map(photo => 
+                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
+                            )
+                            : [];
             return {
                 username: plan.username,
                 destination: plan.destination,
-                accommodation: accommodationDetails,
-                mealPlan: mealPlanDetails,
+                accommodation: {...accommodationDetails, photos: photoUrls},
+                mealPlan: {...mealPlanDetails, photos: photoUrlsMeal},
                 _id: plan._id
             };
         }));
@@ -446,11 +460,23 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
 
             const tripImages = await this.tripImageModel.find({ tripId: new mongoose.Types.ObjectId(id) }).exec();
 
+            const photoUrls = accommodationDetails.photos
+                            ? accommodationDetails.photos.slice(0, 5).map(photo => 
+                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
+                            )
+                            : [];
+
+            const photoUrlsMeal = mealPlanDetails.photos
+            ? mealPlanDetails.photos.slice(0, 5).map(photo => 
+                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
+            )
+            : [];
+
             return {
                 username: tripPlan.username,
                 destination: tripPlan.destination,
-                accommodation: accommodationDetails,
-                mealPlan: mealPlanDetails,
+                accommodation: {...accommodationDetails, photos: photoUrls},
+                mealPlan: {...mealPlanDetails, photos: photoUrlsMeal},
                 images: tripImages.map(image => ({
                     filename: image.filename,
                     path: image.path,
