@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TransportsModule } from './transports/transports.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { WebhookController } from './webhook/webhook.controller';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { AppService } from './app.service';
     }),
     TransportsModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, WebhookController],
   providers: [AppService],
 })
 export class AppModule {}

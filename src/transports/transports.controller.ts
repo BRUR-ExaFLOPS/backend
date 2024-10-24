@@ -6,7 +6,7 @@ import { PopularFoodsRestaurantsDto, PopularFoodsRestaurantsResponseDto } from '
 import { AccommodationsDto, AccommodationsResponseDto } from './dto/accommodations.dto';
 import { TravelRecommendationsDto, TravelRecommendationsResponseDto } from './dto/travel-recommendations.dto';
 
-@Controller('/transports')
+@Controller('/travel')
 export class TransportsController {
     constructor(private readonly transportsService: TransportsService) {}
 

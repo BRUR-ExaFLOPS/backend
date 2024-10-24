@@ -8,6 +8,7 @@ import { PopularFoodsRestaurantsDto, RestaurantDto, PopularFoodsRestaurantsRespo
 import { AccommodationsDto, AccommodationDto, AccommodationsResponseDto } from './dto/accommodations.dto';
 import { TravelRecommendationsDto, TravelRecommendationsResponseDto } from './dto/travel-recommendations.dto';
 import OpenAI from 'openai';
+import { ForecastRequestDto, ForecastResponseDto, DailyForecast } from './dto/forecast.dto';
 
 @Injectable()
 export class TransportsService {
@@ -323,5 +324,59 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
     }
 }
 
+    async getForecast(params: ForecastRequestDto): Promise<ForecastResponseDto> {
+        try {
+            // Get coordinates for the location
+            const geocodeResponse = await firstValueFrom(this.httpService.get('https://maps.googleapis.com/maps/api/geocode/json', {
+                params: {
+                    address: params.location,
+                    key: this.mapApiKey
+                }
+            }));
 
+            const location = geocodeResponse.data.results[0].geometry.location;
+
+            // Get weather forecast
+            const forecastResponse = await firstValueFrom(this.httpService.get('https://api.openweathermap.org/data/2.5/onecall', {
+                params: {
+                    lat: location.lat,
+                    lon: location.lng,
+                    exclude: 'current,minutely,hourly,alerts',
+                    units: 'metric',
+                    appid: this.configService.get<string>('OPEN_WEATHER_API_KEY')
+                }
+            }));
+
+            const startDate = new Date(params.startDate);
+            const endDate = new Date(params.endDate);
+
+            const forecast: DailyForecast[] = forecastResponse.data.daily
+                .filter((day: any) => {
+                    const date = new Date(day.dt * 1000);
+                    return date >= startDate && date <= endDate;
+                })
+                .map((day: any) => ({
+                    date: new Date(day.dt * 1000).toISOString().split('T')[0],
+                    temperature: {
+                        min: day.temp.min,
+                        max: day.temp.max
+                    },
+                    description: day.weather[0].description,
+                    humidity: day.humidity,
+                    windSpeed: day.wind_speed
+                }));
+
+            return {
+                location: params.location,
+                latitude: location.lat,
+                longitude: location.lng,
+                forecast: forecast
+            };
+        } catch (error) {
+            if (error instanceof AxiosError) {
+                console.error('Error fetching forecast:', error.response?.data || error);
+            }
+            throw error;
+        }
+    }
 }
