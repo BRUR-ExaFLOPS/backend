@@ -161,4 +161,15 @@ export class TransportsController {
             throw new BadRequestException(e);
         }
     }
+
+    @Get('generate-blog/:id')
+    async generateBlog(
+        @Param('id') id: string
+    ): Promise<any> {
+        try {
+            return await this.transportsService.generateBlog(id);
+        } catch (e) {
+            throw new BadRequestException(e);
+        }
+    }
 }

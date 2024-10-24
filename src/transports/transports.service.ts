@@ -15,6 +15,8 @@ import { TripPlanDto } from './dto/trip-plan.dto';
 import { TripPlan } from './schemas/trip-plan.schema';
 import { TripImage } from './schemas/trip-image.schema'; // Import the TripImage schema
 import mongoose from "mongoose";
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class TransportsService {
@@ -461,7 +463,79 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
         }
     }
 
-    
+    async generateBlog(id: string): Promise<any> {
+        try {
+            const tripPlan = await this.tripPlanModel.findById(id).exec();
+            if (!tripPlan) {
+                throw new BadRequestException('Trip plan not found');
+            }
 
-    
+            const tripImages = await this.tripImageModel.find({ tripId: new mongoose.Types.ObjectId(id) }).exec();
+
+            const selectedTripImages = [tripImages[0]]
+
+            if (!tripImages || tripImages.length === 0) {
+                throw new BadRequestException('No images found for this trip');
+            }
+
+            // Analyze images to get descriptions
+            const imageDescriptions = await Promise.all(selectedTripImages.map(async image => {
+                const description = await this.analyzeImage(image.path);
+                return `Image: ${image.originalName}, Description: ${description}`;
+            }));
+
+            const prompt = `Create a blog post about a trip to ${tripPlan.destination}. Use the following image descriptions as inspiration:\n${imageDescriptions.join('\n')}\nWrite a detailed and engaging blog post.`;
+
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7,
+                max_tokens: 1000,
+            });
+
+            const blogContent = response.choices[0].message.content;
+
+            return {
+                title: `Trip to ${tripPlan.destination}`,
+                content: blogContent,
+            };
+        } catch (error) {
+            console.error('Error generating blog:', error);
+            throw error;
+        }
+    }
+
+    private async analyzeImage(imagePath: string): Promise<string> {
+        try {
+            const imageBuffer = fs.readFileSync(path.resolve(imagePath));
+            const base64Image = imageBuffer.toString('base64');
+
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            {
+                                type: "text",
+                                text: "What is in this image?",
+                            },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:image/jpeg;base64,${base64Image}`,
+                                },
+                            },
+                        ],
+                    },
+                ],
+            });
+
+            const description = response.choices[0].message.content;
+            return description;
+        } catch (error) {
+            console.error('Error analyzing image:', error);
+            throw error;
+        }
+    }
 }
