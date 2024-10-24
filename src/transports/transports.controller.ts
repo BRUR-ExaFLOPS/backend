@@ -172,4 +172,15 @@ export class TransportsController {
             throw new BadRequestException(e);
         }
     }
+
+    @Get('search-images')
+    async searchImages(
+        @Query('query') query: string
+    ): Promise<any> {
+        try {
+            return await this.transportsService.searchImages(query);
+        } catch (e) {
+            throw new BadRequestException(e);
+        }
+    }
 }

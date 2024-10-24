@@ -7,6 +7,8 @@ import { PhotoController } from "./photo.controller";
 import { MongooseModule } from "@nestjs/mongoose";
 import { TripPlan, TripPlanSchema } from "./schemas/trip-plan.schema";
 import { TripImage, TripImageSchema } from "./schemas/trip-image.schema";
+import { SchedulerService } from './scheduler.service';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
     imports: [
@@ -18,9 +20,10 @@ import { TripImage, TripImageSchema } from "./schemas/trip-image.schema";
         }, {
             name: TripImage.name,
             schema: TripImageSchema
-        }])
+        }]),
+        ScheduleModule.forRoot()
     ],
-    providers: [TransportsService],
+    providers: [TransportsService, SchedulerService],
     controllers: [TransportsController, PhotoController]
 })
 export class TransportsModule {}

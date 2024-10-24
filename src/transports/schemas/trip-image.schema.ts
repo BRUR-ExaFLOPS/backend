@@ -16,6 +16,9 @@ export class TripImage {
 
     @Prop({ required: true })
     originalName: string;
+
+    @Prop()
+    summary: string; // Add a field to store the image summary
 }
 
 export const TripImageSchema = SchemaFactory.createForClass(TripImage);

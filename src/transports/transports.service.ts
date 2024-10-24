@@ -455,6 +455,7 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
                     filename: image.filename,
                     path: image.path,
                     originalName: image.originalName,
+                    summary: image.summary
                 })),
             };
         } catch (error) {
@@ -472,15 +473,13 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
 
             const tripImages = await this.tripImageModel.find({ tripId: new mongoose.Types.ObjectId(id) }).exec();
 
-            const selectedTripImages = [tripImages[0]]
-
             if (!tripImages || tripImages.length === 0) {
                 throw new BadRequestException('No images found for this trip');
             }
 
             // Analyze images to get descriptions
-            const imageDescriptions = await Promise.all(selectedTripImages.map(async image => {
-                const description = await this.analyzeImage(image.path);
+            const imageDescriptions = await Promise.all(tripImages.map(async image => {
+                const description = image.summary ? image.summary : null;
                 return `Image: ${image.originalName}, Description: ${description}`;
             }));
 
@@ -505,7 +504,7 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
         }
     }
 
-    private async analyzeImage(imagePath: string): Promise<string> {
+    async analyzeImage(imagePath: string): Promise<string> {
         try {
             const imageBuffer = fs.readFileSync(path.resolve(imagePath));
             const base64Image = imageBuffer.toString('base64');
@@ -535,6 +534,39 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             return description;
         } catch (error) {
             console.error('Error analyzing image:', error);
+            throw error;
+        }
+    }
+
+    async searchImages(query: string): Promise<any> {
+        try {
+            // Fetch images with summaries
+            const imagesWithSummaries = await this.tripImageModel.find({ summary: { $exists: true, $ne: null } }).exec();
+
+            // Use OpenAI to interpret the query and match it against image summaries
+            const prompt = `Find images that match the following description: "${query}". Here are the image summaries with their IDs:\n${imagesWithSummaries.map(image => `ID: ${image._id}, Summary: ${image.summary}`).join('\n')}`;
+
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7,
+                max_tokens: 1000,
+            });
+
+            const matchedIds = response.choices[0].message.content.split('\n').map(line => line.trim().match(/ID: (\w+)/)?.[1]).filter(id => id);
+
+            // Filter images based on OpenAI's response
+            const matchedImages = imagesWithSummaries.filter(image => matchedIds.includes(image._id.toString()));
+
+            return matchedImages.map(image => ({
+                id: image._id,
+                filename: image.filename,
+                path: image.path,
+                originalName: image.originalName,
+                summary: image.summary
+            }));
+        } catch (error) {
+            console.error('Error searching images:', error);
             throw error;
         }
     }
