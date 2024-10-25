@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { HttpModule } from "@nestjs/axios";
 import { ConfigModule } from "@nestjs/config";
-import { TransportsService } from "./transports.service";
-import { TransportsController } from "./transports.controller";
+import { TravelService } from "./travel.service";
+import { TravelController } from "./travel.controller";
 import { PhotoController } from "./photo.controller";
 import { MongooseModule } from "@nestjs/mongoose";
 import { TripPlan, TripPlanSchema } from "./schemas/trip-plan.schema";
@@ -23,7 +23,7 @@ import { ScheduleModule } from '@nestjs/schedule';
         }]),
         ScheduleModule.forRoot()
     ],
-    providers: [TransportsService, SchedulerService],
-    controllers: [TransportsController, PhotoController]
+    providers: [TravelService, SchedulerService],
+    controllers: [TravelController, PhotoController]
 })
-export class TransportsModule {}
+export class TravelModule {}

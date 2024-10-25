@@ -19,7 +19,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 @Injectable()
-export class TransportsService {
+export class TravelService {
     private readonly mapApiKey: string;
     private readonly openai: OpenAI;
 

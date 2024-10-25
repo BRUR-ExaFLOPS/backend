@@ -3,7 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { TripImage } from './schemas/trip-image.schema';
-import { TransportsService } from './transports.service';
+import { TravelService } from './travel.service';
 
 @Injectable()
 export class SchedulerService {
@@ -11,7 +11,7 @@ export class SchedulerService {
 
     constructor(
         @InjectModel('TripImage') private tripImageModel: Model<TripImage>,
-        private readonly transportsService: TransportsService
+        private readonly transportsService: TravelService
     ) {}
 
     @Cron(CronExpression.EVERY_MINUTE)

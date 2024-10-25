@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Body, ValidationPipe, BadRequestException, Param, Res, NotFoundException } from "@nestjs/common";
-import { TransportsService } from './transports.service';
+import { TravelService } from './travel.service';
 import { DistanceMatrixDto, DistanceMatrixResponseDto } from './dto/distance-matrix.dto';
 import { NearbyHotelsDto, NearbyHotelsResponseDto } from './dto/nearby-hotels.dto';
 import { PopularFoodsRestaurantsDto, PopularFoodsRestaurantsResponseDto } from './dto/popular-foods-restaurants.dto';
@@ -19,9 +19,9 @@ import {
 import { ForecastRequestDto } from "./dto/forecast.dto";
 
 @Controller('/travel')
-export class TransportsController {
+export class TravelController {
     constructor(
-        private readonly transportsService: TransportsService,
+        private readonly transportsService: TravelService,
         @InjectModel('TripImage') private tripImageModel: Model<TripImage>
     ) {}
 
