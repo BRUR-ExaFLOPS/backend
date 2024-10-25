@@ -4,7 +4,7 @@ This documentation provides an overview of the Travel API endpoints, request/res
 
 ## Frontend Repository
 
-[Frontend Reposiory](https://github.com/BRUR-ExaFLOPS/trip-frontend)
+[Frontend Repository](https://github.com/BRUR-ExaFLOPS/trip-frontend)
 
 ## Table of Contents
 
