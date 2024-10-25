@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Body, ValidationPipe, BadRequestException, Param } from "@nestjs/common";
+import { Controller, Get, Post, Query, Body, ValidationPipe, BadRequestException, Param, Res, NotFoundException } from "@nestjs/common";
 import { TransportsService } from './transports.service';
 import { DistanceMatrixDto, DistanceMatrixResponseDto } from './dto/distance-matrix.dto';
 import { NearbyHotelsDto, NearbyHotelsResponseDto } from './dto/nearby-hotels.dto';
@@ -15,6 +15,7 @@ import {
   import { TripImage } from './schemas/trip-image.schema';
   import { InjectModel } from '@nestjs/mongoose';
   import { Model } from 'mongoose';
+  import { Response } from 'express';
 
 @Controller('/travel')
 export class TransportsController {
@@ -181,6 +182,20 @@ export class TransportsController {
             return await this.transportsService.searchImages(query);
         } catch (e) {
             throw new BadRequestException(e);
+        }
+    }
+
+    @Get('image/:filename')
+    async serveImage(@Param('filename') filename: string, @Res() res: Response) {
+        try {
+            const filePath = await this.transportsService.getImage(filename);
+            res.sendFile(filePath);
+        } catch (error) {
+            if (error instanceof NotFoundException) {
+                res.status(404).send('Image not found');
+            } else {
+                res.status(500).send('Internal server error');
+            }
         }
     }
 }

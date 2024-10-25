@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { HttpService } from "@nestjs/axios";
 import { ConfigService } from "@nestjs/config";
 import { InjectModel } from '@nestjs/mongoose';
@@ -173,7 +173,7 @@ export class TransportsService {
             const response = await firstValueFrom(this.httpService.get('https://maps.googleapis.com/maps/api/place/details/json', {
                 params: {
                     place_id: placeId,
-                    fields: 'opening_hours,photos',
+                    fields: 'name,opening_hours,photos,geometry', // Add name to get location name
                     key: this.mapApiKey
                 }
             }));
@@ -410,26 +410,37 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
 
         const tripDetails = await Promise.all(tripPlans.map(async (plan) => {
             const accommodationDetails = await this.getPlaceDetails(plan.accommodation);
-
-            const photoUrls = accommodationDetails.photos
-                            ? accommodationDetails.photos.slice(0, 5).map(photo => 
-                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
-                            )
-                            : [];
-
-
-
             const mealPlanDetails = await this.getPlaceDetails(plan.mealPlan);
-            const photoUrlsMeal = mealPlanDetails.photos
-                            ? mealPlanDetails.photos.slice(0, 5).map(photo => 
-                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
-                            )
-                            : [];
+
+            const photoUrls = accommodationDetails?.photos
+                ? accommodationDetails?.photos?.slice(0, 5).map(photo => 
+                    `/photos?photoReference=${photo?.photo_reference}&maxWidth=400`
+                )
+                : [];
+
+            const photoUrlsMeal = mealPlanDetails?.photos
+                ? mealPlanDetails?.photos?.slice(0, 5).map(photo => 
+                    `/photos?photoReference=${photo?.photo_reference}&maxWidth=400`
+                )
+                : [];
+
             return {
                 username: plan.username,
                 destination: plan.destination,
-                accommodation: {...accommodationDetails, photos: photoUrls},
-                mealPlan: {...mealPlanDetails, photos: photoUrlsMeal},
+                accommodation: {
+                    ...accommodationDetails,
+                    photos: photoUrls,
+                    name: accommodationDetails?.name,
+                    latitude: accommodationDetails?.geometry?.location?.lat,
+                    longitude: accommodationDetails?.geometry?.location?.lng,
+                },
+                mealPlan: {
+                    ...mealPlanDetails,
+                    photos: photoUrlsMeal,
+                    name: mealPlanDetails?.name,
+                    latitude: mealPlanDetails?.geometry?.location?.lat,
+                    longitude: mealPlanDetails?.geometry?.location?.lng,
+                },
                 _id: plan._id
             };
         }));
@@ -461,22 +472,34 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             const tripImages = await this.tripImageModel.find({ tripId: new mongoose.Types.ObjectId(id) }).exec();
 
             const photoUrls = accommodationDetails.photos
-                            ? accommodationDetails.photos.slice(0, 5).map(photo => 
-                                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
-                            )
-                            : [];
+                ? accommodationDetails?.photos?.slice(0, 5).map(photo => 
+                    `/photos?photoReference=${photo?.photo_reference}&maxWidth=400`
+                )
+                : [];
 
             const photoUrlsMeal = mealPlanDetails.photos
-            ? mealPlanDetails.photos.slice(0, 5).map(photo => 
-                `/photos?photoReference=${photo.photo_reference}&maxWidth=400` // Proxy URL
-            )
-            : [];
+                ? mealPlanDetails?.photos?.slice(0, 5).map(photo => 
+                    `/photos?photoReference=${photo?.photo_reference}&maxWidth=400`
+                )
+                : [];
 
             return {
                 username: tripPlan.username,
                 destination: tripPlan.destination,
-                accommodation: {...accommodationDetails, photos: photoUrls},
-                mealPlan: {...mealPlanDetails, photos: photoUrlsMeal},
+                accommodation: {
+                    ...accommodationDetails,
+                    photos: photoUrls,
+                    name: accommodationDetails.name,
+                    latitude: accommodationDetails.geometry?.location.lat,
+                    longitude: accommodationDetails.geometry?.location.lng,
+                },
+                mealPlan: {
+                    ...mealPlanDetails,
+                    photos: photoUrlsMeal,
+                    name: mealPlanDetails.name,
+                    latitude: mealPlanDetails.geometry?.location.lat,
+                    longitude: mealPlanDetails.geometry?.location.lng,
+                },
                 images: tripImages.map(image => ({
                     filename: image.filename,
                     path: image.path,
@@ -594,6 +617,17 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
         } catch (error) {
             console.error('Error searching images:', error);
             throw error;
+        }
+    }
+
+    async getImage(filename: string): Promise<string> {
+        const uploadsDir = path.join(process.cwd(), 'uploads', 'trip-images');
+        const filePath = path.join(uploadsDir, filename);
+
+        if (fs.existsSync(filePath)) {
+            return filePath;
+        } else {
+            throw new NotFoundException('Image not found');
         }
     }
 }
