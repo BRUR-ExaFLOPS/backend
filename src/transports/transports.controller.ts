@@ -16,6 +16,7 @@ import {
   import { InjectModel } from '@nestjs/mongoose';
   import { Model } from 'mongoose';
   import { Response } from 'express';
+import { ForecastRequestDto } from "./dto/forecast.dto";
 
 @Controller('/travel')
 export class TransportsController {
@@ -23,6 +24,8 @@ export class TransportsController {
         private readonly transportsService: TransportsService,
         @InjectModel('TripImage') private tripImageModel: Model<TripImage>
     ) {}
+
+
 
     @Get("distance-matrix")
     async getDistanceMatrix(
@@ -197,5 +200,10 @@ export class TransportsController {
                 res.status(500).send('Internal server error');
             }
         }
+    }
+
+    @Get("weather")
+    async getWeather(@Query(new ValidationPipe({ transform: true })) params: ForecastRequestDto) {
+        return this.transportsService.getForecast(params);
     }
 }

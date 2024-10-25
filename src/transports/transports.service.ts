@@ -276,7 +276,7 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             `${r.name} at ${r.address} (placeId: ${r.placeId}) with a rating of ${r.rating}`
         );
         
-        const prompt = `Based on the following data, provide a travel plan for a trip to ${params.destination} for ${params.duration} days. Include pricing for accommodations, meal plans, and transportation options. Use the placeId for each entry to enable further location queries:
+        const prompt = `Based on the following data, provide a travel plan for a trip from ${params?.origin || "Dhaka"} to ${params.destination} for ${params.duration} days. Include pricing for accommodations, meal plans, and transportation options. Use the placeId for each entry to enable further location queries:
         Accommodations: ${accommodationsList.join(', ')}
         Restaurants: ${restaurantsList.join(', ')}
         Format the response as a JSON object with keys: accommodations, mealPlans, transportation. Each should be an array of objects with name, price, and placeId keys.`;
@@ -333,7 +333,7 @@ async getTravelRecommendations(params: TravelRecommendationsDto): Promise<Travel
             duration: params?.duration,
             accommodations: accommodationsWithLocation,
             mealPlans: mealPlansWithLocation,
-            transportation: transportationWithLocation
+            transportation: transportationWithLocation,
         };
     } catch (error) {
         console.error('Error getting travel recommendations:', error);
