@@ -1,54 +1,62 @@
-Sure, I'll update the documentation to include the provided environment variables and their explanations.
-
 # Travel API Documentation
 
 This documentation provides an overview of the Travel API endpoints, request/response schemas, and how to interact with them. The API is built using NestJS and offers various travel-related services such as accommodations, distance calculations, weather forecasts, and more.
 
+## Frontend Repository
+
+[Frontend Reposiory](https://github.com/BRUR-ExaFLOPS/trip-frontend)
+
 ## Table of Contents
 
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [API Endpoints](#api-endpoints)
-  - [Photos](#photos)
-    - [GET /photos](#get-photos)
-  - [Travel](#travel)
-    - [GET /travel/distance-matrix](#get-traveldistance-matrix)
-    - [GET /travel/nearby-hotels](#get-travelnearby-hotels)
-    - [GET /travel/popular-foods-restaurants](#get-travelpopular-foods-restaurants)
-    - [GET /travel/accommodations](#get-travelaccommodations)
-    - [GET /travel/travel-recommendations](#get-traveltravel-recommendations)
-    - [POST /travel/store-trip-plan](#post-travelstore-trip-plan)
-    - [GET /travel/trip-details](#get-traveltrip-details)
-    - [POST /travel/upload](#post-travelupload)
-    - [POST /travel/upload-trip-images](#post-travelupload-trip-images)
-    - [GET /travel/trip/:id](#get-traveltripid)
-    - [GET /travel/generate-blog/:id](#get-travelgenerate-blogid)
-    - [GET /travel/search-images](#get-travelsearch-images)
-    - [GET /travel/image/:filename](#get-travelimagefilename)
-    - [GET /travel/weather](#get-travelweather)
-- [Data Transfer Objects (DTOs)](#data-transfer-objects-dtos)
-  - [AccommodationsDto](#accommodationsdto)
-  - [AccommodationDto](#accommodationdto)
-  - [AccommodationsResponseDto](#accommodationsresponsedto)
-  - [DistanceMatrixDto](#distancematrixdto)
-  - [DistanceMatrixResponseDto](#distancematrixresponsedto)
-  - [ForecastRequestDto](#forecastrequestdto)
-  - [ForecastResponseDto](#forecastresponsedto)
-  - [NearbyHotelsDto](#nearbyhotelsdto)
-  - [NearbyHotelsResponseDto](#nearbyhotelsresponsedto)
-  - [PopularFoodsRestaurantsDto](#popularfoodsrestaurantsdto)
-  - [PopularFoodsRestaurantsResponseDto](#popularfoodsrestaurantsresponsedto)
-  - [TravelRecommendationsDto](#travelrecommendationsdto)
-  - [TravelRecommendationsResponseDto](#travelrecommendationsresponsedto)
-  - [TripPlanDto](#tripplandto)
-- [Setting Up the NestJS Application](#setting-up-the-nestjs-application)
-- [Services Overview](#services-overview)
-  - [Google Maps API](#google-maps-api)
-  - [OpenWeatherMap API](#openweathermap-api)
-  - [OpenAI API](#openai-api)
-  - [Clerk (Authentication)](#clerk-authentication)
-  - [MongoDB](#mongodb)
-- [License](#license)
+- [Travel API Documentation](#travel-api-documentation)
+  - [Frontend Repository](#frontend-repository)
+  - [Table of Contents](#table-of-contents)
+  - [Getting Started](#getting-started)
+  - [Environment Variables](#environment-variables)
+  - [API Endpoints](#api-endpoints)
+    - [Photos](#photos)
+      - [GET /photos](#get-photos)
+    - [Travel](#travel)
+      - [GET /travel/distance-matrix](#get-traveldistance-matrix)
+      - [GET /travel/nearby-hotels](#get-travelnearby-hotels)
+      - [GET /travel/popular-foods-restaurants](#get-travelpopular-foods-restaurants)
+      - [GET /travel/accommodations](#get-travelaccommodations)
+      - [GET /travel/travel-recommendations](#get-traveltravel-recommendations)
+      - [POST /travel/store-trip-plan](#post-travelstore-trip-plan)
+      - [GET /travel/trip-details](#get-traveltrip-details)
+      - [POST /travel/upload](#post-travelupload)
+      - [POST /travel/upload-trip-images](#post-travelupload-trip-images)
+      - [GET /travel/trip/:id](#get-traveltripid)
+      - [GET /travel/generate-blog/:id](#get-travelgenerate-blogid)
+      - [GET /travel/search-images](#get-travelsearch-images)
+      - [GET /travel/image/:filename](#get-travelimagefilename)
+      - [GET /travel/weather](#get-travelweather)
+  - [Data Transfer Objects (DTOs)](#data-transfer-objects-dtos)
+    - [AccommodationsDto](#accommodationsdto)
+    - [AccommodationDto](#accommodationdto)
+    - [AccommodationsResponseDto](#accommodationsresponsedto)
+    - [DistanceMatrixDto](#distancematrixdto)
+    - [DistanceMatrixResponseDto](#distancematrixresponsedto)
+    - [ForecastRequestDto](#forecastrequestdto)
+    - [ForecastResponseDto](#forecastresponsedto)
+    - [DailyForecast](#dailyforecast)
+    - [NearbyHotelsDto](#nearbyhotelsdto)
+    - [NearbyHotelsResponseDto](#nearbyhotelsresponsedto)
+    - [HotelDto](#hoteldto)
+    - [PopularFoodsRestaurantsDto](#popularfoodsrestaurantsdto)
+    - [PopularFoodsRestaurantsResponseDto](#popularfoodsrestaurantsresponsedto)
+    - [RestaurantDto](#restaurantdto)
+    - [TravelRecommendationsDto](#travelrecommendationsdto)
+    - [TravelRecommendationsResponseDto](#travelrecommendationsresponsedto)
+    - [TripPlanDto](#tripplandto)
+  - [Setting Up the NestJS Application](#setting-up-the-nestjs-application)
+  - [Services Overview](#services-overview)
+    - [Google Maps API](#google-maps-api)
+    - [OpenWeatherMap API](#openweathermap-api)
+    - [OpenAI API](#openai-api)
+    - [Clerk (Authentication)](#clerk-authentication)
+    - [MongoDB](#mongodb)
+  - [License](#license)
 
 ## Getting Started
 
@@ -764,7 +772,3 @@ The application uses MongoDB as its database to store trip plans, images, and ot
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-For any questions or issues, please contact the project maintainer.
